@@ -6,7 +6,6 @@ import 'package:shelf/shelf_io.dart';
 import 'package:shelf_router/shelf_router.dart';
 
 import '../lib/storage.dart';
-import '../lib/models.dart';
 
 Middleware _cors() {
   return (Handler innerHandler) {
