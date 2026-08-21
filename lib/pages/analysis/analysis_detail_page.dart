@@ -1,3 +1,45 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ðèréžžÛ?
-‡^Çý´Û­<Û_Û{ü(®Oé®ˆÞrÛ?–+^­«n­é^j¹âž
-ej×è®oå‰¿éj¬ý©Ú—+"³ö§j\¬ŠÇ^µ¨¥¥¨uªíRÆ y¶¬{®vçºh¢ø¥zŠ.µø¥y¶ëy©­æ¤zw(uçl¶¸§‚)í¢{¦r«iË^®X§zÀÝuç(uç^r‡^²)éºØazZ]ŠÊek+aŠÉž²Æ z(§¦ëbž›­~)^uçÚº[_¢»-v)è¢ëiºÚ.¶›­~)^uçÚº[_¢»-v‹­
+import 'package:flutter/material.dart';
+import 'analysis_repository.dart';
+
+class AnalysisDetailPage extends StatelessWidget {
+  final AnalysisItem item;
+  const AnalysisDetailPage({super.key, required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('è§£æžæ–‡ç« '),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                item.title.isNotEmpty
+                    ? 'ã€Š${item.bookTitle}ã€‹ï¼š${item.title}'
+                    : 'ã€Š${item.bookTitle}ã€‹è§£æž',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${item.author} Â· ${item.publishDate.year}-${item.publishDate.month}-${item.publishDate.day}',
+                style: TextStyle(color: Colors.grey[700]),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                item.content,
+                style: const TextStyle(fontSize: 16, height: 1.6),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

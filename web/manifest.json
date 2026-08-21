@@ -1,3 +1,35 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ðèréžžÛ?
-‡^Çý´Û­<Û_Û{ü(®Oé®ˆÞrÛ?–+^­«n­é^j¹âž
-ej×è®oðy¿æjxŸzËc²‰Ô±¨m«ë€Ý…¹îš(§~)^¢‹­~)^mºÞjFëy©ÊyÛ-®)àŠ{hžéœ…ªÚr×«–)Þ°7]yÊy×œ¡×¬Šzn¶^–—b²™ZÊØb²g¬±¨Š)éºØ§¦ë_ŠWyö®–×è®Ë]Šz(ºÚn¶‹­¦ë_ŠWyö®–×è®Ë]¢ë
+{
+    "name": "Literature Learning Platform",
+    "short_name": "Literature Hub",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0175C2",
+    "theme_color": "#0175C2",
+    "description": "Read classics, write notes, discuss ideas and use an optional AI study assistant.",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false,
+    "icons": [
+        {
+            "src": "icons/Icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "icons/Icon-maskable-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "maskable"
+        },
+        {
+            "src": "icons/Icon-maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

@@ -1,3 +1,787 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ğèréÛ?
-‡^Çı´Û­<Û_Û{ü(®Oé®ˆŞrÛ?–+^­«n­é^j¹â
-ej×è®oå‰¿éj¬ş·šuêÿnŠ$­æzºZçZ®Õ,j›jÇºà7an{¦Š)ßŠW¨¢ë_ŠW›n·š‘ºŞjG§r‡^vËkŠx"Ú'ºg!j¶œµêåŠw¬×^r‡^uç(uë"›­†¥¥Ø¬¦V²¶¬™ë,j¢Šzn¶)éº×â•ç^}«¥µú+²×bŠ.¶›­¢ëiº×â•ç^}«¥µú+²×hº
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+
+import '../../main.dart';
+import '../../services/api_client.dart';
+import '../../services/customer_service_api.dart';
+
+class BookReaderPage extends StatefulWidget {
+  final int bookId;
+  final String bookTitle;
+
+  const BookReaderPage({
+    super.key,
+    required this.bookId,
+    required this.bookTitle,
+  });
+
+  @override
+  _BookReaderPageState createState() => _BookReaderPageState();
+}
+
+class _BookReaderPageState extends State<BookReaderPage> {
+  int _currentChapter = 0;
+  final ScrollController _scrollController = ScrollController();
+  bool _isNightMode = false;
+  double _fontSize = 16.0;
+
+  final Set<String> _favoriteKeys = <String>{};
+
+  List<String> _currentParagraphs = const [];
+
+  final List<String> _chapters = [
+    'Chapter 1',
+    'Chapter 2',
+    'Chapter 3',
+    'Chapter 4',
+    'Chapter 5',
+    'Chapter 6',
+    'Chapter 7',
+    'Chapter 8',
+    'Chapter 9',
+    'Chapter 10',
+  ];
+
+  // æ¨¡æ‹Ÿç« èŠ‚å†…å®¹
+  final Map<int, String> _chapterContents = {
+    0: '''It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.
+
+However little known the feelings or views of such a man may be on his first entering a neighbourhood, this truth is so well fixed in the minds of the surrounding families, that he is considered the rightful property of some one or other of their daughters.
+
+"My dear Mr. Bennet," said his lady to him one day, "have you heard that Netherfield Park is let at last?"
+
+Mr. Bennet replied that he had not.
+
+"But it is," returned she; "for Mrs. Long has just been here, and she told me all about it."
+
+Mr. Bennet made no answer.
+
+"Do you not want to know who has taken it?" cried his wife impatiently.
+
+"You want to tell me, and I have no objection to hearing it."
+
+This was invitation enough.
+
+"Why, my dear, you must know, Mrs. Long says that Netherfield is taken by a young man of large fortune from the north of England; that he came down on Monday in a chaise and four to see the place, and was so much delighted with it, that he agreed with Mr. Morris immediately; that he is to take possession before Michaelmas, and some of his servants are to be in the house by the end of next week."
+
+"What is his name?"
+
+"Bingley."
+
+"Is he married or single?"
+
+"Oh! Single, my dear, to be sure! A single man of large fortune; four or five thousand a year. What a fine thing for our girls!"
+
+"How so? How can it affect them?"
+
+"My dear Mr. Bennet," replied his wife, "how can you be so tiresome! You must know that I am thinking of his marrying one of them."
+
+"Is that his design in settling here?"
+
+"Design! Nonsense, how can you talk so! But it is very likely that he may fall in love with one of them, and therefore you must visit him as soon as he comes."''',
+    1: '''Mr. Bennet was among the earliest of those who waited on Mr. Bingley. He had always intended to visit him, though to the last always assuring his wife that he should not go; and till the evening after the visit was paid she had no knowledge of it. It was then disclosed in the following manner. Observing his second daughter employed in trimming a hat, he suddenly addressed her with:
+
+"I hope Mr. Bingley will like it, Lizzy."
+
+"We are not in a way to know what Mr. Bingley likes," said her mother resentfully, "since we are not to visit."
+
+"But you forget, mamma," said Elizabeth, "that we shall meet him at the assemblies, and that Mrs. Long promised to introduce him."
+
+"I do not believe Mrs. Long will do any such thing. She has two nieces of her own. She is a selfish, hypocritical woman, and I have no opinion of her."
+
+"No more have I," said Mr. Bennet; "and I am glad to find that you do not depend on her serving you."
+
+Mrs. Bennet deigned not to make any reply, but, unable to contain herself, began scolding one of her daughters.
+
+"Don't keep coughing so, Kitty, for Heaven's sake! Have a little compassion on my nerves. You tear them to pieces."
+
+"Kitty has no discretion in her coughs," said her father; "she times them ill."
+
+"I do not cough for my own amusement," replied Kitty fretfully. "When is your next ball to be, Lizzy?"
+
+"To-morrow fortnight."
+
+"Aye, so it is," cried her mother, "and Mrs. Long does not come back till the day before; so it will be impossible for her to introduce him, for she will not know him herself."
+
+"Then, my dear, you may have the advantage of your friend, and introduce Mr. Bingley to her."
+
+"Impossible, Mr. Bennet, impossible, when I am not acquainted with him myself; how can you be so teasing?"
+
+"I honour your circumspection. A fortnight's acquaintance is certainly very little. One cannot know what a man really is by the end of a fortnight. But if we do not venture somebody else will; and after all, Mrs. Long and her nieces must stand their chance; and, therefore, as she will think it an act of kindness, if you decline the office, I will take it on myself."''',
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReaderSettings();
+    _loadLastReadPosition();
+    _loadFavorites();
+
+    // ç›‘å¬æ»šåŠ¨ä½ç½®ï¼Œä¿å­˜é˜…è¯»è¿›åº¦
+    _scrollController.addListener(_saveScrollPosition);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_saveScrollPosition);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // åŠ è½½æ”¶è—
+  void _loadFavorites() async {
+    final prefs = await SharedPreferences.getInstance();
+    // è¯»å–å·²ä¿å­˜çš„é”®é›†åˆ
+    final savedKeySet = prefs.getStringList('favorites_key_set') ?? [];
+    setState(() {
+      _favoriteKeys
+        ..clear()
+        ..addAll(savedKeySet);
+    });
+  }
+
+  // åŠ è½½é˜…è¯»è®¾ç½®
+  void _loadReaderSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isNightMode = prefs.getBool('isNightMode') ?? false;
+      _fontSize = prefs.getDouble('fontSize') ?? 16.0;
+    });
+  }
+
+  // ä¿å­˜é˜…è¯»è®¾ç½®
+  void _saveReaderSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('isNightMode', _isNightMode);
+    await prefs.setDouble('fontSize', _fontSize);
+  }
+
+  // åŠ è½½ä¸Šæ¬¡é˜…è¯»ä½ç½®
+  void _loadLastReadPosition() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bookKey = 'book_${widget.bookId}';
+    setState(() {
+      _currentChapter = prefs.getInt('${bookKey}_chapter') ?? 0;
+
+      // å»¶è¿Ÿæ»šåŠ¨åˆ°ä¸Šæ¬¡ä½ç½®
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_scrollController.hasClients) {
+          final position = prefs.getDouble('${bookKey}_position') ?? 0.0;
+          _scrollController.jumpTo(
+            position.clamp(0.0, _scrollController.position.maxScrollExtent),
+          );
+        }
+      });
+    });
+  }
+
+  // ä¿å­˜æ»šåŠ¨ä½ç½®
+  void _saveScrollPosition() async {
+    if (!_scrollController.hasClients) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final bookKey = 'book_${widget.bookId}';
+    await prefs.setInt('${bookKey}_chapter', _currentChapter);
+    await prefs.setDouble('${bookKey}_position', _scrollController.offset);
+  }
+
+  // åˆ‡æ¢ç« èŠ‚
+  void _changeChapter(int chapter) {
+    setState(() {
+      _currentChapter = chapter;
+      _recomputeParagraphs();
+      // é‡ç½®æ»šåŠ¨ä½ç½®
+      Future.delayed(const Duration(milliseconds: 100), () {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
+      });
+    });
+    Navigator.pop(context); // å…³é—­æŠ½å±‰
+  }
+
+  // é‡æ–°è®¡ç®—å½“å‰ç« èŠ‚æ®µè½
+  void _recomputeParagraphs() {
+    final content = _chapterContents[_currentChapter] ?? '';
+    _currentParagraphs = content
+        .split(RegExp(r"\n\n+"))
+        .map((p) => p.trim())
+        .where((p) => p.isNotEmpty)
+        .toList();
+  }
+
+  // æ·»åŠ ç¬”è®°
+  void _addNote(String selectedText) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        final noteController = TextEditingController();
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            left: 16,
+            right: 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Add Note',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Selected text: $selectedText',
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: noteController,
+                decoration: const InputDecoration(
+                  hintText: 'Enter note content...',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      // ä¿å­˜ç¬”è®°åˆ°åç«¯
+                      final content = noteController.text.trim();
+                      if (content.isNotEmpty) {
+                        final backendBookId = 'b${widget.bookId}';
+                        ApiClient()
+                            .createNote(bookId: backendBookId, content: content)
+                            .then((_) {
+                              Fluttertoast.showToast(
+                                msg: 'Note saved',
+                                toastLength: Toast.LENGTH_SHORT,
+                              );
+                            })
+                            .catchError((e) {
+                              Fluttertoast.showToast(
+                                msg: 'Save failed: $e',
+                                toastLength: Toast.LENGTH_SHORT,
+                              );
+                            });
+                      }
+                      Navigator.pop(context);
+                    },
+                    child: const Text('Save'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final readerProvider = Provider.of<ReaderProvider>(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    // ç¡®ä¿æ®µè½ç¼“å­˜æœ€æ–°
+    _recomputeParagraphs();
+
+    return WillPopScope(
+      onWillPop: _handleWillPopToHome,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.bookTitle),
+          backgroundColor: _isNightMode
+              ? Colors.black
+              : Theme.of(context).colorScheme.primary,
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.format_size),
+              onPressed: _showFontSizeDialog,
+            ),
+            IconButton(
+              tooltip: 'Ask AI',
+              icon: const Icon(Icons.chat_bubble_outline),
+              onPressed: () => _openAskAIDialog(),
+            ),
+            IconButton(
+              icon: Icon(
+                _isNightMode ? Icons.wb_sunny : Icons.nightlight_round,
+              ),
+              onPressed: () {
+                setState(() {
+                  _isNightMode = !_isNightMode;
+                  _saveReaderSettings();
+                });
+              },
+            ),
+          ],
+        ),
+        drawer: Drawer(
+          child: Column(
+            children: [
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: _isNightMode
+                      ? Colors.black
+                      : Theme.of(context).colorScheme.primary,
+                ),
+                child: Center(
+                  child: Text(
+                    widget.bookTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: _chapters.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(_chapters[index]),
+                      selected: _currentChapter == index,
+                      selectedTileColor: (_isNightMode
+                          ? Colors.grey[800]
+                          : Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.1)),
+                      onTap: () => _changeChapter(index),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: Row(
+          children: [
+            // åœ¨å¹³æ¿æ¨¡å¼ä¸‹æ˜¾ç¤ºå·¦ä¾§ç« èŠ‚å¯¼èˆª
+            if (isTablet)
+              Container(
+                width: 200,
+                decoration: BoxDecoration(
+                  border: Border(
+                    right: BorderSide(
+                      color: _isNightMode
+                          ? Colors.grey[800]!
+                          : Colors.grey[300]!,
+                    ),
+                  ),
+                ),
+                child: ListView.builder(
+                  itemCount: _chapters.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text(_chapters[index]),
+                      selected: _currentChapter == index,
+                      selectedTileColor: (_isNightMode
+                          ? Colors.grey[800]
+                          : Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.1)),
+                      onTap: () => setState(() {
+                        _currentChapter = index;
+                        // é‡ç½®æ»šåŠ¨ä½ç½®
+                        Future.delayed(const Duration(milliseconds: 100), () {
+                          if (_scrollController.hasClients) {
+                            _scrollController.jumpTo(0);
+                          }
+                        });
+                      }),
+                    );
+                  },
+                ),
+              ),
+
+            // é˜…è¯»åŒºåŸŸ
+            Expanded(
+              child: Container(
+                color: _isNightMode ? Colors.black : Colors.white,
+                child: SingleChildScrollView(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ...List.generate(_currentParagraphs.length, (idx) {
+                        final text = _currentParagraphs[idx];
+                        final key = _favoriteKeyFor(idx);
+                        final isFav = _favoriteKeys.contains(key);
+                        final bgColor = isFav
+                            ? (_isNightMode
+                                  ? Colors.blueGrey[800]
+                                  : Colors.yellow[100])
+                            : Colors.transparent;
+                        final textColor = _isNightMode
+                            ? Colors.grey[300]
+                            : Colors.black87;
+                        return GestureDetector(
+                          onLongPress: () =>
+                              _showParagraphMenu(idx, text, isFav),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 8,
+                            ),
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: bgColor,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              text,
+                              style: TextStyle(
+                                fontSize: _fontSize,
+                                height: 1.6,
+                                color: textColor,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 24),
+                      _buildChapterNoteComposer(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Font size dialog
+  void _showFontSizeDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Adjust Font Size'),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Preview text', style: TextStyle(fontSize: _fontSize)),
+                const SizedBox(height: 16),
+                Slider(
+                  value: _fontSize,
+                  min: 12.0,
+                  max: 24.0,
+                  divisions: 6,
+                  label: _fontSize.round().toString(),
+                  onChanged: (value) {
+                    setState(() {
+                      _fontSize = value;
+                    });
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                // å·²åœ¨StatefulBuilderä¸­æ›´æ–°äº†_fontSize
+                _saveReaderSettings();
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Paragraph menu (favorites)
+  void _showParagraphMenu(int paragraphIndex, String selectedText, bool isFav) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Wrap(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.favorite_border),
+            title: Text(isFav ? 'Remove Favorite' : 'Add Favorite'),
+            onTap: () {
+              Navigator.pop(context);
+              _toggleFavorite(paragraphIndex, selectedText);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.smart_toy_outlined),
+            title: const Text('Ask AI (use this paragraph)'),
+            onTap: () {
+              Navigator.pop(context);
+              _openAskAIDialog(seedText: selectedText);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.note_add),
+            title: const Text('Add Note'),
+            onTap: () {
+              Navigator.pop(context);
+              _addNote(selectedText);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _favoriteKeyFor(int paragraphIndex) =>
+      '${widget.bookId}:$_currentChapter:$paragraphIndex';
+
+  Future<void> _toggleFavorite(int paragraphIndex, String text) async {
+    final key = _favoriteKeyFor(paragraphIndex);
+    final prefs = await SharedPreferences.getInstance();
+    final List<String> keySet = prefs.getStringList('favorites_key_set') ?? [];
+    List<Map<String, dynamic>> items = [];
+    final raw = prefs.getString('favorites_items');
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(raw);
+        items = (decoded as List).cast<Map<String, dynamic>>();
+      } catch (_) {
+        items = [];
+      }
+    }
+
+    setState(() {
+      if (_favoriteKeys.contains(key)) {
+        _favoriteKeys.remove(key);
+        keySet.remove(key);
+        items.removeWhere((m) => (m['key'] ?? '') == key);
+        Fluttertoast.showToast(msg: 'Removed from favorites');
+      } else {
+        _favoriteKeys.add(key);
+        if (!keySet.contains(key)) keySet.add(key);
+        items.add({
+          'key': key,
+          'bookId': widget.bookId,
+          'bookTitle': widget.bookTitle,
+          'chapter': _currentChapter,
+          'paragraphIndex': paragraphIndex,
+          'text': text,
+          'createdAt': DateTime.now().toIso8601String(),
+        });
+        Fluttertoast.showToast(msg: 'Added to favorites');
+      }
+    });
+
+    await prefs.setStringList('favorites_key_set', keySet);
+    try {
+      await prefs.setString('favorites_items', jsonEncode(items));
+    } catch (_) {}
+  }
+
+  // Open "Ask AI" dialog
+  void _openAskAIDialog({String? seedText}) {
+    final controller = TextEditingController(text: seedText ?? '');
+    String reply = '';
+    bool sending = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Ask AI',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: controller,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      hintText:
+                          'Enter a question, or use selected paragraph as context',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        onPressed: sending
+                            ? null
+                            : () async {
+                                final question = controller.text.trim();
+                                if (question.isEmpty) {
+                                  Fluttertoast.showToast(
+                                    msg: 'Please enter a question',
+                                  );
+                                  return;
+                                }
+                                setState(() => sending = true);
+                                final service = CustomerServiceApi();
+                                final res = await service.getReply(
+                                  question,
+                                  selectedText: seedText,
+                                  bookTitle: widget.bookTitle,
+                                );
+                                setState(() {
+                                  reply = res;
+                                  sending = false;
+                                });
+                              },
+                        icon: const Icon(Icons.send),
+                        label: const Text('Send'),
+                      ),
+                      const SizedBox(width: 12),
+                      OutlinedButton.icon(
+                        onPressed: (seedText == null || sending)
+                            ? null
+                            : () async {
+                                setState(() => sending = true);
+                                final service = CustomerServiceApi();
+                                final m = await service.analyzeText(seedText!);
+                                setState(() {
+                                  reply = const JsonEncoder.withIndent(
+                                    '  ',
+                                  ).convert(m);
+                                  sending = false;
+                                });
+                              },
+                        icon: const Icon(Icons.analytics_outlined),
+                        label: const Text('Analyze Selected Paragraph'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (sending) const LinearProgressIndicator(),
+                  if (reply.isNotEmpty) ...[
+                    Text(
+                      'AI Reply:',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _isNightMode
+                            ? Colors.grey[900]
+                            : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        reply,
+                        style: TextStyle(
+                          color: _isNightMode
+                              ? Colors.grey[300]
+                              : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ç« èŠ‚æœ«å°¾ç¬”è®°ç¼–è¾‘å™¨
+  Widget _buildChapterNoteComposer() {
+    final controller = TextEditingController();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Divider(color: _isNightMode ? Colors.grey[700] : Colors.grey[300]),
+        const SizedBox(height: 8),
+        Text(
+          'Chapter Notes',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: _isNightMode ? Colors.grey[300] : Colors.black87,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'Write notes for this chapter...',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Align(
+          alignment: Alignment.centerRight,
+          child: ElevatedButton.icon(
+            icon: const Icon(Icons.save),
+            label: const Text('Save Note'),
+            onPressed: () {
+              final content = controller.text.trim();
+              if (content.isEmpty) {
+                Fluttertoast.showToast(msg: 'Please enter note content');
+                return;
+              }
+              final backendBookId = 'b${widget.bookId}';
+              ApiClient()
+                  .createNote(bookId: backendBookId, content: content)
+                  .then((_) => Fluttertoast.showToast(msg: 'Note saved'))
+                  .catchError(
+                    (e) => Fluttertoast.showToast(msg: 'Save failed: $e'),
+                  );
+              controller.clear();
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  // å¤„ç†å®‰å“ç³»ç»Ÿè¿”å›é”®ï¼Œç»Ÿä¸€è¿”å›åˆ°ä¸»é¡µ
+  Future<bool> _handleWillPopToHome() async {
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    return false; // é˜»æ­¢é»˜è®¤è¡Œä¸ºï¼ˆé¿å…é‡å¤ popï¼‰
+  }
+}

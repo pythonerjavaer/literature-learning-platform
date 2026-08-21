@@ -1,3 +1,58 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ğèréÛ?
-‡^Çı´Û­<Û_Û{ü(®Oé®ˆŞrÛ?–+^­«n­é^j¹â
-ej×è®oå‰¿ìz»âqë?rë-¢g«±êï‰Çš¦'Z®Õ,j›jÇºà7an{¦Š)ßŠW¨¢ë_ŠW›n·š‘ºŞjG§r‡^vËkŠx"Ú'ºg!j¶œµêåŠw¬×^r‡^uç(uë"›­†¥¥Ø¬¦V²¶¬™ë,j¢Šzn¶)éº×â•ç^}«¥µú+²×bŠ.¶›­¢ëiº×â•ç^}«¥µú+²×hº
+import 'api_client.dart';
+import 'package:dio/dio.dart';
+
+/// å®¢æœAIæœåŠ¡ï¼šè°ƒç”¨åç«¯ /ai/chat æˆ– /ai/analyze æ¥å£
+class CustomerServiceApi {
+  /// èµ°å¤šè½®ä¼šè¯æ¥å£ï¼ˆåç«¯ä¼˜å…ˆä½¿ç”¨ Ollama /api/chat æˆ– OpenAI Responsesï¼‰
+  Future<String> getReply(String userInput, {String? selectedText, String? bookTitle}) async {
+    try {
+      final dio = ApiClient().dio;
+      final resp = await dio.post(
+        '/ai/chat',
+        data: {
+          'messages': [
+            {
+              'role': 'user',
+              'content': userInput,
+            }
+          ],
+          'context': {
+            'selectedText': selectedText ?? '',
+            'bookTitle': bookTitle ?? '',
+          }
+        },
+        options: Options(
+          // AIç”Ÿæˆå¯èƒ½è¾ƒæ…¢ï¼Œæé«˜æ¥æ”¶è¶…æ—¶ä»¥é¿å…10ç§’è¶…æ—¶
+          receiveTimeout: const Duration(minutes: 2),
+          sendTimeout: const Duration(seconds: 30),
+        ),
+      );
+      final reply = (resp.data['reply'] ?? '').toString();
+      if (reply.isEmpty) return 'æŠ±æ­‰ï¼Œæš‚æ—¶æ²¡æœ‰å¯ç”¨çš„å›å¤ã€‚';
+      return reply;
+    } catch (e) {
+      return 'AIæ¥å£è¯·æ±‚å¤±è´¥ï¼š$e';
+    }
+  }
+
+  /// å•è½®åˆ†ææ¥å£ï¼ˆè¿”å› summary/sentiment/keywords ç­‰JSONï¼Œå¯ç”¨äºåç»­æ‰©å±•ï¼‰
+  Future<Map<String, dynamic>> analyzeText(String text) async {
+      try {
+        final dio = ApiClient().dio;
+        final resp = await dio.post(
+          '/ai/analyze',
+          data: {
+            'text': text,
+          },
+          options: Options(
+            receiveTimeout: const Duration(minutes: 1),
+            sendTimeout: const Duration(seconds: 30),
+          ),
+        );
+        final m = resp.data as Map<String, dynamic>;
+        return m;
+      } catch (e) {
+        return {'error': 'request_failed', 'message': e.toString()};
+      }
+  }
+}

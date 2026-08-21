@@ -1,3 +1,12 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ðèréžžÛ?
-‡^Çý´Û­<Û_Û{ü(®Oé®ˆÞrÛ?–+^­«n­é^j¹âž
-ej×è®oÚÚè‰ßÚ¦Ÿì­Ïæj)ÿ­ë?v¶°i¹^þV®È[iÉ ®‹§w¥RÆ y¶¬{®vçºh¢ø¥zŠ.µø¥y¶ëy©­æ¤zw(uçl¶¸§‚)í¢{¦r«iË^®X§zÀÝuç(uç^r‡^²)éºØazZ]ŠÊek+aŠÉž²Æ z(§¦ëbž›­~)^uçÚº[_¢»-v)è¢ëiºÚ.¶›­~)^uçÚº[_¢»-v‹­
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Modify this file to customize your launch splash screen -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@android:color/white" />
+
+    <!-- You can insert your own image assets here -->
+    <!-- <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@mipmap/launch_image" />
+    </item> -->
+</layer-list>

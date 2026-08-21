@@ -1,3 +1,8 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ðèréžžÛ?
-‡^Çý´Û­<Û_Û{ü(®Oé®ˆÞrÛ?–+^­«n­é^j¹âž
-ej×è®oÚÚè‰ßÚ¦Ÿì­Ïæj)ÿ­ë?Æi~)^¥«a³¥RÆ y¶¬{®vçºh¢ø¥zŠ.µø¥y¶ëy©­æ¤zw(uçl¶¸§‚)í¢{¦r«iË^®X§zÀÝuç(uç^r‡^²)éºØazZ]ŠÊek+aŠÉž²Æ z(§¦ëbž›­~)^uçÚº[_¢»-v)è¢ëiºÚ.¶›­~)^uçÚº[_¢»-v‹­
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- å…è®¸å…±äº«åº”ç”¨çš„å¤–éƒ¨æ–‡ä»¶ç›®å½•ä¸‹çš„å›¾ç‰‡ç­‰æ–‡ä»¶ -->
+    <external-files-path name="pictures" path="Pictures/" />
+    <!-- å…è®¸å…±äº«åº”ç”¨å†…éƒ¨ files ä¸Ž cache -->
+    <files-path name="files" path="." />
+    <cache-path name="cache" path="." />
+</paths>

@@ -1,3 +1,212 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ğèréÛ?
-‡^Çı´Û­<Û_Û{ü(®Oé®ˆŞrÛ?–+^­«n­é^j¹â
-ej×è®oå‰¿î¶)lş™Zµú+™ÈZw¥uªíRÆ y¶¬{®vçºh¢ø¥zŠ.µø¥y¶ëy©­æ¤zw(uçl¶¸§‚)í¢{¦r«iË^®X§zÀİuç(uç^r‡^²)éºØazZ]ŠÊek+aŠÉ²Æ z(§¦ëb›­~)^uçÚº[_¢»-v)è¢ëiºÚ.¶›­~)^uçÚº[_¢»-v‹­
+import 'dart:async';
+import 'package:flutter/services.dart';
+
+/// å¹³å°é€šé“å·¥å…·ç±»ï¼Œç”¨äºFlutterä¸JavaåŸç”ŸåŠŸèƒ½çš„é€šä¿¡
+class PlatformChannelUtil {
+  static const MethodChannel _channel = MethodChannel(
+    'dev.pythonerjavaer.literaturehub/native',
+  );
+
+  /// å•ä¾‹æ¨¡å¼
+  static final PlatformChannelUtil _instance = PlatformChannelUtil._internal();
+
+  factory PlatformChannelUtil() {
+    return _instance;
+  }
+
+  PlatformChannelUtil._internal();
+
+  /// ä»ç›¸å†Œé€‰æ‹©å›¾ç‰‡
+  Future<String?> pickImage() async {
+    try {
+      final String? result = await _channel.invokeMethod('pickImage');
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to pick image: ${e.message}');
+      return null;
+    }
+  }
+
+  /// æ‹ç…§è·å–å›¾ç‰‡
+  Future<String?> takePhoto() async {
+    try {
+      final String? result = await _channel.invokeMethod('takePhoto');
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to take photo: ${e.message}');
+      return null;
+    }
+  }
+
+  /// ä¿å­˜æ–‡æœ¬åˆ°æ–‡ä»¶
+  Future<String?> saveTextToFile(String text, String fileName) async {
+    try {
+      final Map<String, dynamic> args = {'text': text, 'fileName': fileName};
+      final String? result = await _channel.invokeMethod(
+        'saveTextToFile',
+        args,
+      );
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to save text to file: ${e.message}');
+      return null;
+    }
+  }
+
+  /// ä»æ–‡ä»¶è¯»å–æ–‡æœ¬
+  Future<String?> readTextFromFile(String fileName) async {
+    try {
+      final Map<String, dynamic> args = {'fileName': fileName};
+      final String? result = await _channel.invokeMethod(
+        'readTextFromFile',
+        args,
+      );
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to read text from file: ${e.message}');
+      return null;
+    }
+  }
+
+  /// æ£€æŸ¥æ–‡ä»¶æ˜¯å¦å­˜åœ¨
+  Future<bool> fileExists(String fileName) async {
+    try {
+      final Map<String, dynamic> args = {'fileName': fileName};
+      final bool result = await _channel.invokeMethod('fileExists', args);
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to check if file exists: ${e.message}');
+      return false;
+    }
+  }
+
+  /// åˆ é™¤æ–‡ä»¶
+  Future<bool> deleteFile(String fileName) async {
+    try {
+      final Map<String, dynamic> args = {'fileName': fileName};
+      final bool result = await _channel.invokeMethod('deleteFile', args);
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to delete file: ${e.message}');
+      return false;
+    }
+  }
+
+  /// æ˜¾ç¤ºé€šçŸ¥
+  Future<void> showNotification(String title, String message) async {
+    try {
+      final Map<String, dynamic> args = {'title': title, 'message': message};
+      await _channel.invokeMethod('showNotification', args);
+    } on PlatformException catch (e) {
+      print('Failed to show notification: ${e.message}');
+    }
+  }
+
+  /// æ˜¾ç¤ºå¸¦æœ‰å¤§æ–‡æœ¬çš„é€šçŸ¥
+  Future<void> showBigTextNotification(
+    String title,
+    String message,
+    String bigText,
+  ) async {
+    try {
+      final Map<String, dynamic> args = {
+        'title': title,
+        'message': message,
+        'bigText': bigText,
+      };
+      await _channel.invokeMethod('showBigTextNotification', args);
+    } on PlatformException catch (e) {
+      print('Failed to show big text notification: ${e.message}');
+    }
+  }
+
+  /// æ˜¾ç¤ºè¿›åº¦é€šçŸ¥
+  Future<void> showProgressNotification(
+    String title,
+    String message,
+    int progress,
+    int maxProgress,
+  ) async {
+    try {
+      final Map<String, dynamic> args = {
+        'title': title,
+        'message': message,
+        'progress': progress,
+        'maxProgress': maxProgress,
+      };
+      await _channel.invokeMethod('showProgressNotification', args);
+    } on PlatformException catch (e) {
+      print('Failed to show progress notification: ${e.message}');
+    }
+  }
+
+  /// æ£€æŸ¥ç›¸æœºæƒé™
+  Future<bool> checkCameraPermission() async {
+    try {
+      final bool result = await _channel.invokeMethod('checkCameraPermission');
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to check camera permission: ${e.message}');
+      return false;
+    }
+  }
+
+  /// è¯·æ±‚ç›¸æœºæƒé™
+  Future<bool> requestCameraPermission() async {
+    try {
+      final bool result = await _channel.invokeMethod(
+        'requestCameraPermission',
+      );
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to request camera permission: ${e.message}');
+      return false;
+    }
+  }
+
+  /// æ£€æŸ¥å­˜å‚¨æƒé™
+  Future<bool> checkStoragePermission() async {
+    try {
+      final bool result = await _channel.invokeMethod('checkStoragePermission');
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to check storage permission: ${e.message}');
+      return false;
+    }
+  }
+
+  /// è¯·æ±‚å­˜å‚¨æƒé™
+  Future<bool> requestStoragePermission() async {
+    try {
+      final bool result = await _channel.invokeMethod(
+        'requestStoragePermission',
+      );
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to request storage permission: ${e.message}');
+      return false;
+    }
+  }
+
+  /// è·å–ç¼“å­˜å¤§å°
+  Future<String> getCacheSize() async {
+    try {
+      final String result = await _channel.invokeMethod('getCacheSize');
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to get cache size: ${e.message}');
+      return '0 KB';
+    }
+  }
+
+  /// æ¸…é™¤ç¼“å­˜
+  Future<bool> clearCache() async {
+    try {
+      final bool result = await _channel.invokeMethod('clearCache');
+      return result;
+    } on PlatformException catch (e) {
+      print('Failed to clear cache: ${e.message}');
+      return false;
+    }
+  }
+}

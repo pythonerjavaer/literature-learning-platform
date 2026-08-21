@@ -1,3 +1,12 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ðèréžžÛ?
-‡^Çý´Û­<Û_Û{ü(®Oé®ˆÞrÛ?–+^­«n­é^j¹âž
-ej×è®oízËÂ'`zÛ^²×Z®Õ,j›jÇºà7an{¦Š)ßŠW¨¢ë_ŠW›n·š‘ºÞjG§r‡^vËkŠx"žÚ'ºg!j¶œµêåŠw¬×^r‡^uç(uë"ž›­†¥¥Ø¬¦V²¶¬™ë,j¢Šzn¶)éº×â•ç^}«¥µú+²×bžŠ.¶›­¢ëiº×â•ç^}«¥µú+²×hº
+import 'package:flutter_test/flutter_test.dart';
+
+import 'package:english_reader/main.dart';
+
+void main() {
+  test('theme provider switches between light and dark modes', () {
+    final provider = ThemeProvider();
+    expect(provider.isDarkMode, isFalse);
+    provider.toggleTheme();
+    expect(provider.isDarkMode, isTrue);
+  });
+}

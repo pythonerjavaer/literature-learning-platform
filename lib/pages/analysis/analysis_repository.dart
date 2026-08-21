@@ -1,3 +1,175 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ğèréÛ?
-‡^Çı´Û­<Û_Û{ü(®Oé®ˆŞrÛ?–+^­«n­é^j¹â
-ej×è®oå‰¿éj¬ı©Ú—+"³ö§j\¬ŠÊŞ¦‹"¶ŠòuªíRÆ y¶¬{®vçºh¢ø¥zŠ.µø¥y¶ëy©­æ¤zw(uçl¶¸§‚)í¢{¦r«iË^®X§zÀİuç(uç^r‡^²)éºØazZ]ŠÊek+aŠÉ²Æ z(§¦ëb›­~)^uçÚº[_¢»-v)è¢ëiºÚ.¶›­~)^uçÚº[_¢»-v‹­
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class AnalysisItem {
+  final String id;
+  final String title;
+  final String content;
+  final String author;
+  final String bookTitle;
+  final DateTime publishDate;
+  int likeCount;
+
+  AnalysisItem({
+    required this.id,
+    required this.title,
+    required this.content,
+    required this.author,
+    required this.bookTitle,
+    required this.publishDate,
+    this.likeCount = 0,
+  });
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'title': title,
+        'content': content,
+        'author': author,
+        'bookTitle': bookTitle,
+        'publishDate': publishDate.toIso8601String(),
+        'likeCount': likeCount,
+      };
+
+  static AnalysisItem fromMap(Map<String, dynamic> m) => AnalysisItem(
+        id: (m['id'] ?? '').toString(),
+        title: (m['title'] ?? '') as String,
+        content: (m['content'] ?? '') as String,
+        author: (m['author'] ?? '') as String,
+        bookTitle: (m['bookTitle'] ?? '') as String,
+        publishDate: DateTime.tryParse(m['publishDate'] ?? '') ?? DateTime.now(),
+        likeCount: (m['likeCount'] ?? 0) as int,
+      );
+}
+
+class AnalysisRepository {
+  static const _key = 'customAnalyses';
+  static const _likeKey = 'analysisLikeCounts';
+  static const _likedSetKey = 'analysisLikedSet';
+
+  // é¢„ç½®å†…ç½®è§£æåˆ—è¡¨ï¼ˆæ¨¡æ‹Ÿâ€œæœ€æ–°è§£æâ€ï¼‰
+  static List<AnalysisItem> builtin() {
+    final now = DateTime.now();
+    return [
+      AnalysisItem(
+        id: 'a1',
+        title: 'ã€Šå‚²æ…¢ä¸åè§ã€‹äººç‰©å…³ç³»è§£æ',
+        author: 'ç‹æ•™æˆ',
+        bookTitle: 'å‚²æ…¢ä¸åè§',
+        content:
+            'æœ¬æ–‡å°†æ·±å…¥åˆ†æã€Šå‚²æ…¢ä¸åè§ã€‹ä¸­çš„äººç‰©å…³ç³»ï¼Œç‰¹åˆ«æ˜¯ä¼Šä¸½èç™½ä¸è¾¾è¥¿çš„æ€§æ ¼å†²çªä¸å’Œè§£ã€‚',
+        publishDate: now.subtract(const Duration(days: 7)),
+        likeCount: 12,
+      ),
+      AnalysisItem(
+        id: 'a2',
+        title: 'ã€ŠåŒåŸè®°ã€‹å†å²èƒŒæ™¯æ¢è®¨',
+        author: 'æè€å¸ˆ',
+        bookTitle: 'åŒåŸè®°',
+        content: 'æ³•å›½å¤§é©å‘½å¦‚ä½•å½±å“äº†ç‹„æ›´æ–¯çš„åˆ›ä½œï¼Ÿä»å†å²è§’åº¦è§£è¯»ã€ŠåŒåŸè®°ã€‹ã€‚',
+        publishDate: now.subtract(const Duration(days: 10)),
+        likeCount: 9,
+      ),
+      AnalysisItem(
+        id: 'a3',
+        title: 'ã€Šå‘¼å•¸å±±åº„ã€‹å™äº‹ç»“æ„åˆ†æ',
+        author: 'å¼ æ•™æˆ',
+        bookTitle: 'å‘¼å•¸å±±åº„',
+        content: 'å¤šå±‚åµŒå¥—çš„å™äº‹æ¡†æ¶å¦‚ä½•å¢å¼ºäº†å°è¯´çš„ç¥ç§˜æ„Ÿå’Œå¤æ‚æ€§ã€‚',
+        publishDate: now.subtract(const Duration(days: 15)),
+        likeCount: 7,
+      ),
+    ];
+  }
+
+  Future<List<AnalysisItem>> listAll() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
+    final custom = <AnalysisItem>[];
+    if (raw != null && raw.isNotEmpty) {
+      final arr = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+      custom.addAll(arr.map(AnalysisItem.fromMap));
+    }
+    final all = [...builtin(), ...custom];
+    all.sort((a, b) => b.publishDate.compareTo(a.publishDate));
+    return all;
+  }
+
+  Future<List<AnalysisItem>> loadCustom() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_key);
+    if (raw == null || raw.isEmpty) return [];
+    final arr = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    return arr.map(AnalysisItem.fromMap).toList();
+  }
+
+  Future<void> saveCustom(List<AnalysisItem> items) async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = items.map((e) => e.toMap()).toList();
+    await prefs.setString(_key, jsonEncode(data));
+  }
+
+  Future<AnalysisItem?> getById(String id) async {
+    final all = await listAll();
+    try {
+      return all.firstWhere((e) => e.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  // ç‚¹èµï¼šåŠ è½½ã€ä¿å­˜ä»¥åŠè¦†ç›–åˆ—è¡¨ä¸­çš„ç‚¹èµæ•°
+  Future<Map<String, int>> loadLikeCounts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_likeKey);
+    if (raw == null || raw.isEmpty) return {};
+    final m = jsonDecode(raw) as Map<String, dynamic>;
+    return m.map((k, v) => MapEntry(k, (v ?? 0) as int));
+  }
+
+  Future<void> saveLikeCounts(Map<String, int> counts) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_likeKey, jsonEncode(counts));
+  }
+
+  Future<Set<String>> loadLikedSet() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_likedSetKey);
+    if (raw == null || raw.isEmpty) return <String>{};
+    final list = (jsonDecode(raw) as List).cast<String>();
+    return list.toSet();
+  }
+
+  Future<void> saveLikedSet(Set<String> liked) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_likedSetKey, jsonEncode(liked.toList()));
+  }
+
+  Future<List<AnalysisItem>> listAllWithLikeOverrides() async {
+    final items = await listAll();
+    final counts = await loadLikeCounts();
+    for (final it in items) {
+      final c = counts[it.id];
+      if (c != null) it.likeCount = c;
+    }
+    return items;
+  }
+
+  // åˆ‡æ¢ç‚¹èµï¼›è¿”å›æ–°çš„ç‚¹èµæ•°
+  Future<int> toggleLike(String id) async {
+    final liked = await loadLikedSet();
+    final counts = await loadLikeCounts();
+    final item = await getById(id);
+    final current = counts[id] ?? (item?.likeCount ?? 0);
+    final isLiked = liked.contains(id);
+    final next = isLiked ? (current > 0 ? current - 1 : 0) : current + 1;
+    if (isLiked) {
+      liked.remove(id);
+    } else {
+      liked.add(id);
+    }
+    counts[id] = next;
+    await saveLikedSet(liked);
+    await saveLikeCounts(counts);
+    return next;
+  }
+}

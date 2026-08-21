@@ -1,3 +1,246 @@
-m´ÎàßΩ©bu™‡∫gß∑ı,zª?~Í⁄£ËrÈûû€?
-á^«˝¥€≠<€_€{¸(ÆOÈÆàﬁr€?ñ+^≠´n≠È^jπ‚û
-ej◊ËÆoÂâøÈj¨˝©⁄ó+"≥˘ZµÎ-jv• »¨•®u™ÌR∆†y∂¨{ÆvÁ∫h¢ù¯•zä.µ¯•y∂Îy©≠Ê§zw(uÁl∂∏ßÇ)Ì¢{¶r´iÀ^ÆXßz¿›uÁ(uÁ^rá^≤)È∫ÿazZ]ä ek+aä…û≤∆†z(ß¶Îbûõ≠~)^uÁ⁄∫[_¢ª-v)Ë¢Îi∫⁄.∂õ≠~)^uÁ⁄∫[_¢ª-vã≠
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'analysis_repository.dart';
+import '../../main.dart';
+import 'analysis_detail_page.dart';
+
+class LatestAnalysisPage extends StatefulWidget {
+  const LatestAnalysisPage({super.key});
+
+  @override
+  State<LatestAnalysisPage> createState() => _LatestAnalysisPageState();
+}
+
+class _LatestAnalysisPageState extends State<LatestAnalysisPage>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final _repo = AnalysisRepository();
+  List<AnalysisItem> _all = [];
+  String _query = '';
+  Set<String> _liked = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _load();
+  }
+
+  Future<void> _load() async {
+    final items = await _repo.listAllWithLikeOverrides();
+    final liked = await _repo.loadLikedSet();
+    setState(() {
+      _all = items;
+      _liked = liked;
+    });
+  }
+
+  void _openPublishForm() async {
+    final titleCtrl = TextEditingController();
+    final bookCtrl = TextEditingController();
+    final contentCtrl = TextEditingController();
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final author = userProvider.username.isNotEmpty
+        ? userProvider.username
+        : 'ÂΩìÂâçÁî®Êà∑';
+
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('ÂèëÂ∏ÉËß£Êûê'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: bookCtrl,
+                decoration: const InputDecoration(
+                  labelText: '‰ΩúÂìÅÂêçÁß∞',
+                  hintText: '‰æãÂ¶ÇÔºöÂÇ≤ÊÖ¢‰∏éÂÅèËßÅ',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Ëß£ÊûêÊ†áÈ¢ò',
+                  hintText: '‰æãÂ¶ÇÔºö‰∫∫Áâ©ÂÖ≥Á≥ªËß£Êûê',
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: contentCtrl,
+                maxLines: 6,
+                decoration: const InputDecoration(
+                  labelText: 'Ëß£ÊûêÊ≠£Êñá',
+                  hintText: 'Êí∞ÂÜô‰Ω†ÁöÑËß£ÊûêÂÜÖÂÆπ...',
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('ÂèñÊ∂à'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final title = titleCtrl.text.trim();
+              final book = bookCtrl.text.trim();
+              final content = contentCtrl.text.trim();
+              if (title.isEmpty || content.isEmpty || book.isEmpty) return;
+
+              final item = AnalysisItem(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                title: title,
+                content: content,
+                author: author,
+                bookTitle: book,
+                publishDate: DateTime.now(),
+                likeCount: 0,
+              );
+              final custom = await _repo.loadCustom();
+              custom.insert(0, item);
+              await _repo.saveCustom(custom);
+              await _load();
+              if (context.mounted) Navigator.pop(context);
+            },
+            child: const Text('ÂèëÂ∏É'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<AnalysisItem> _filteredAll() {
+    final q = _query.trim();
+    final list = [..._all];
+    if (q.isNotEmpty) {
+      return list
+          .where((e) => e.title.contains(q) || e.content.contains(q))
+          .toList();
+    }
+    return list;
+  }
+
+  List<AnalysisItem> _hot() {
+    final list = _filteredAll();
+    list.sort((a, b) => b.likeCount.compareTo(a.likeCount));
+    return list;
+  }
+
+  List<AnalysisItem> _mine() {
+    final userProvider = Provider.of<UserProvider>(context, listen: false);
+    final name = userProvider.username.isNotEmpty
+        ? userProvider.username
+        : 'ÂΩìÂâçÁî®Êà∑';
+    return _filteredAll().where((e) => e.author == name).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ëëó‰ΩúËß£Êûê'),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'ÂÖ®ÈÉ®Ëß£Êûê'),
+            Tab(text: 'ÁÉ≠Èó®Ëß£Êûê'),
+            Tab(text: 'ÊàëÁöÑÂèëÂ∏É'),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.create),
+            onPressed: _openPublishForm,
+            tooltip: 'Êí∞ÂÜôÂπ∂ÂèëÂ∏ÉËß£Êûê',
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12.0),
+            child: TextField(
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'ÊêúÁ¥¢Ëß£Êûê‚Ä¶',
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (v) => setState(() => _query = v),
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildList(_filteredAll()),
+                _buildList(_hot()),
+                _buildList(_mine()),
+              ],
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openPublishForm,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _buildList(List<AnalysisItem> items) {
+    if (items.isEmpty) {
+      return const Center(child: Text('ÊöÇÊó†Ëß£ÊûêÂÜÖÂÆπ'));
+    }
+    return ListView.separated(
+      itemCount: items.length,
+      separatorBuilder: (_, __) => const Divider(height: 1),
+      itemBuilder: (context, index) {
+        final it = items[index];
+        return ListTile(
+          title: Text(
+            '„Ää${it.bookTitle}„Äã${it.title.isNotEmpty ? 'Ôºö${it.title}' : ''}',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            it.content.length > 60
+                ? '${it.content.substring(0, 60)}‚Ä¶'
+                : it.content,
+          ),
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: Icon(
+                  _liked.contains(it.id)
+                      ? Icons.thumb_up_alt
+                      : Icons.thumb_up_alt_outlined,
+                  size: 20,
+                ),
+                tooltip: _liked.contains(it.id) ? 'ÂèñÊ∂àËµû' : 'ÁÇπËµû',
+                onPressed: () async {
+                  await _repo.toggleLike(it.id);
+                  await _load();
+                },
+              ),
+              const SizedBox(width: 4),
+              Text('${it.likeCount}'),
+            ],
+          ),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AnalysisDetailPage(item: it),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

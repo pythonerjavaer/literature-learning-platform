@@ -1,3 +1,22 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ðèréžžÛ?
-‡^Çý´Û­<Û_Û{ü(®Oé®ˆÞrÛ?–+^­«n­é^j¹âž
-ej×è®oÛiÉßÝjÖ¿nŠ$²;(KæÚ±î¸Ø[žé¢Šwâ•ê(º×â•æÛ­æ¤n·š‘éÜ¡×²Úâž§¶‰î™ÈZ­§-z¹bëu×œ¡×yÊzÈ§¦ëa…éiv+)•¬­†+&zËè¢ž›­Šznµø¥y×Ÿjém~ŠìµØ§¢‹­¦ëhºÚnµø¥y×Ÿjém~ŠìµÚ.
+{
+  "books": [
+    {
+      "id": "b1",
+      "title": "Pride and Prejudice",
+      "author": "Jane Austen",
+      "description": "A classic novel about manners and matrimony."
+    },
+    {
+      "id": "b2",
+      "title": "Great Expectations",
+      "author": "Charles Dickens",
+      "description": "Pipâ€™s coming-of-age journey and social critique."
+    },
+    {
+      "id": "b3",
+      "title": "Moby-Dick",
+      "author": "Herman Melville",
+      "description": "The pursuit of the white whale and obsession."
+    }
+  ]
+}

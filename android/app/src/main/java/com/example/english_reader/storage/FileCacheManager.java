@@ -1,3 +1,275 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ðèréžžÛ?
-‡^Çý´Û­<Û_Û{ü(®Oé®ˆÞrÛ?–+^­«n­é^j¹âž
-ej×è®oÚÚè‰ßÚ¦Ÿì­Ïæj)ÿ«ÚýÊ&ýìZš™^ýéà–+!­æz¿ì¶ŠÚïÅŠW‚iÈ^1©Úêãjö”±¨m«ë€Ý…¹îš(§~)^¢‹­~)^mºÞjFëy©ÊyÛ-®)àŠ{hžéœ…ªÚr×«–)Þ°7]yÊy×œ¡×¬Šzn¶^–—b²™ZÊØb²g¬±¨Š)éºØ§¦ë_ŠWyö®–×è®Ë]Šz(ºÚn¶‹­¦ë_ŠWyö®–×è®Ë]¢ë
+package dev.pythonerjavaer.literaturehub.storage;
+import android.content.Context;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Environment;
+import android.provider.OpenableColumns;
+import android.util.Log;
+
+import androidx.core.content.FileProvider;
+
+import java.io.BufferedReader;
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+
+/**
+ * FileCacheManager - æ–‡ä»¶ç¼“å­˜ç®¡ç†å™¨
+ * 
+ * è¿™ä¸ªç±»è´Ÿè´£å¤„ç†åº”ç”¨ä¸­çš„æ–‡ä»¶æ“ä½œï¼ŒåŒ…æ‹¬ï¼š
+ * - åˆ›å»ºå’Œç®¡ç†ä¸´æ—¶å›¾ç‰‡æ–‡ä»¶
+ * - ä¿å­˜å’Œè¯»å–æ–‡æœ¬æ–‡ä»¶
+ * - å¤„ç†æ–‡ä»¶URIå’Œè·¯å¾„è½¬æ¢
+ * - ç®¡ç†åº”ç”¨çš„æ–‡ä»¶ç¼“å­˜
+ */
+public class FileCacheManager {
+    private static final String TAG = "FileCacheManager";
+    private final Context context;  // åº”ç”¨ä¸Šä¸‹æ–‡
+    private String currentPhotoPath; // å½“å‰æ‹ç…§å›¾ç‰‡çš„è·¯å¾„
+    
+    /**
+     * æž„é€ å‡½æ•°
+     * 
+     * @param context åº”ç”¨ä¸Šä¸‹æ–‡ï¼Œç”¨äºŽè®¿é—®åº”ç”¨èµ„æºå’Œç›®å½•
+     */
+    public FileCacheManager(android.content.Context context) {
+        this.context = context;
+    }
+
+    /**
+     * åˆ›å»ºç”¨äºŽä¿å­˜ç…§ç‰‡çš„ä¸´æ—¶æ–‡ä»¶
+     */
+    public File createImageFile() throws IOException {
+        // åˆ›å»ºå›¾ç‰‡æ–‡ä»¶å
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + "_";
+        File storageDir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+        File image = File.createTempFile(
+                imageFileName,  /* å‰ç¼€ */
+                ".jpg",         /* åŽç¼€ */
+                storageDir      /* ç›®å½• */
+        );
+
+        // ä¿å­˜æ–‡ä»¶è·¯å¾„ä»¥ä¾›åŽç»­ä½¿ç”¨
+        currentPhotoPath = image.getAbsolutePath();
+        return image;
+    }
+
+    /**
+     * èŽ·å–å½“å‰ç…§ç‰‡è·¯å¾„
+     */
+    public String getCurrentPhotoPath() {
+        return currentPhotoPath;
+    }
+
+    /**
+     * èŽ·å–æ–‡ä»¶çš„Uri
+     */
+    public Uri getUriForFile(File file) {
+        return FileProvider.getUriForFile(
+                context,
+                "dev.pythonerjavaer.literaturehub.fileprovider",
+                file);
+    }
+
+    /**
+     * ä»ŽUrièŽ·å–æ–‡ä»¶è·¯å¾„
+     */
+    public String getPathFromUri(Uri uri) {
+        if (uri == null) return null;
+        String scheme = uri.getScheme();
+        try {
+            if ("content".equals(scheme)) {
+                String fileName = getFileName(uri);
+                if (fileName == null || fileName.isEmpty()) {
+                    fileName = "content_" + System.currentTimeMillis();
+                }
+                return copyFileToInternalStorage(uri, fileName);
+            } else if ("file".equals(scheme)) {
+                return uri.getPath();
+            } else {
+                return null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error getting file path from URI: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * ä»ŽUrièŽ·å–æ–‡ä»¶å
+     */
+    private String getFileName(Uri uri) {
+        if (uri == null) return null;
+        String result = null;
+        String scheme = uri.getScheme();
+        if ("content".equals(scheme)) {
+            try (Cursor cursor = context.getContentResolver().query(uri, null, null, null, null)) {
+                if (cursor != null && cursor.moveToFirst()) {
+                    int columnIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                    if (columnIndex != -1) {
+                        result = cursor.getString(columnIndex);
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error getting file name: " + e.getMessage());
+            }
+        }
+        if (result == null) {
+            String path = uri.getPath();
+            if (path != null) {
+                int cut = path.lastIndexOf('/');
+                if (cut != -1) {
+                    result = path.substring(cut + 1);
+                } else {
+                    result = path;
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * å°†æ–‡ä»¶å¤åˆ¶åˆ°å†…éƒ¨å­˜å‚¨
+     */
+    private String copyFileToInternalStorage(Uri uri, String fileName) {
+        try {
+            File outputFile = new File(context.getFilesDir(), fileName);
+            try (InputStream inputStream = context.getContentResolver().openInputStream(uri);
+                 BufferedInputStream bis = inputStream != null ? new BufferedInputStream(inputStream) : null;
+                 BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(outputFile))) {
+                if (bis == null) {
+                    return null;
+                }
+                byte[] buffer = new byte[8192];
+                int bytesRead;
+                while ((bytesRead = bis.read(buffer)) != -1) {
+                    bos.write(buffer, 0, bytesRead);
+                }
+                bos.flush();
+                return outputFile.getAbsolutePath();
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Error copying file: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * ä¿å­˜æ–‡æœ¬æ–‡ä»¶
+     */
+    public String saveTextFile(String content, String fileName) throws IOException {
+        File file = new File(context.getFilesDir(), fileName);
+        try (FileOutputStream fos = new FileOutputStream(file);
+             OutputStreamWriter writer = new OutputStreamWriter(fos, StandardCharsets.UTF_8)) {
+            writer.write(content);
+            writer.flush();
+            return file.getAbsolutePath();
+        }
+    }
+
+    /**
+     * è¯»å–æ–‡æœ¬æ–‡ä»¶
+     */
+    public String readTextFile(String fileName) throws IOException {
+        File file = new File(context.getFilesDir(), fileName);
+        StringBuilder content = new StringBuilder();
+        try (FileInputStream fis = new FileInputStream(file);
+             InputStreamReader isr = new InputStreamReader(fis, StandardCharsets.UTF_8);
+             BufferedReader reader = new BufferedReader(isr)) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                content.append(line).append("\n");
+            }
+            return content.toString();
+        }
+    }
+
+    /**
+     * æ£€æŸ¥æ–‡ä»¶æ˜¯å¦å­˜åœ¨
+     */
+    public boolean fileExists(String fileName) {
+        File file = new File(context.getFilesDir(), fileName);
+        return file.exists();
+    }
+
+    /**
+     * åˆ é™¤æ–‡ä»¶
+     */
+    public boolean deleteFile(String fileName) {
+        File file = new File(context.getFilesDir(), fileName);
+        return file.exists() && file.delete();
+    }
+
+    /**
+     * èŽ·å–ç¼“å­˜å¤§å°
+     */
+    public long getCacheSize() {
+        return getDirSize(context.getCacheDir()) + getDirSize(context.getExternalCacheDir());
+    }
+
+    /**
+     * æ¸…é™¤ç¼“å­˜
+     */
+    public boolean clearCache() {
+        boolean result = deleteDir(context.getCacheDir());
+        if (context.getExternalCacheDir() != null) {
+            result &= deleteDir(context.getExternalCacheDir());
+        }
+        return result;
+    }
+
+    /**
+     * èŽ·å–ç›®å½•å¤§å°
+     */
+    private long getDirSize(File dir) {
+        if (dir == null || !dir.exists()) {
+            return 0;
+        }
+        
+        long size = 0;
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile()) {
+                    size += file.length();
+                } else {
+                    size += getDirSize(file);
+                }
+            }
+        }
+        return size;
+    }
+
+    /**
+     * åˆ é™¤ç›®å½•
+     */
+    private boolean deleteDir(File dir) {
+        if (dir == null || !dir.exists() || !dir.isDirectory()) {
+            return false;
+        }
+        
+        boolean result = true;
+        File[] files = dir.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isFile()) {
+                    result &= file.delete();
+                } else {
+                    result &= deleteDir(file);
+                }
+            }
+        }
+        return result;
+    }
+}

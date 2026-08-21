@@ -1,3 +1,416 @@
-m«ëˆ§½©buªàºg§·õ,z»?~êÚ£ğèréÛ?
-‡^Çı´Û­<Û_Û{ü(®Oé®ˆŞrÛ?–+^­«n­é^j¹â
-ej×è®oå‰¿éj¬şz-zÏç¢×¬¥¨uªíRÆ y¶¬{®vçºh¢ø¥zŠ.µø¥y¶ëy©­æ¤zw(uçl¶¸§‚)í¢{¦r«iË^®X§zÀİuç(uç^r‡^²)éºØazZ]ŠÊek+aŠÉ²Æ z(§¦ëb›­~)^uçÚº[_¢»-v)è¢ëiºÚ.¶›­~)^uçÚº[_¢»-v‹­
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import '../../services/api_client.dart';
+
+class Note {
+  final String id;
+  final String bookId; // ä¾‹å¦‚ "b1"
+  final String bookTitle; // æ˜ å°„è‡ªåç«¯å›¾ä¹¦
+  final int chapterId; // ä¿ç•™å­—æ®µï¼Œæš‚æ— åç«¯æ•°æ®
+  final String chapterTitle; // ä¿ç•™å­—æ®µï¼Œæš‚æ— åç«¯æ•°æ®
+  final String selectedText; // ä¿ç•™å­—æ®µï¼Œæš‚æ— åç«¯æ•°æ®
+  final String noteContent; // æ˜ å°„è‡ªåç«¯ content
+  final DateTime createdAt;
+
+  Note({
+    required this.id,
+    required this.bookId,
+    required this.bookTitle,
+    required this.chapterId,
+    required this.chapterTitle,
+    required this.selectedText,
+    required this.noteContent,
+    required this.createdAt,
+  });
+}
+
+class NotesPage extends StatefulWidget {
+  const NotesPage({super.key});
+
+  @override
+  _NotesPageState createState() => _NotesPageState();
+}
+
+class _NotesPageState extends State<NotesPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _selectedBook = 'All';
+  List<Note> _notes = [];
+  List<Note> _filteredNotes = [];
+
+  // ä¹¦ç±åˆ—è¡¨ï¼ˆä»åç«¯åŠ è½½ï¼‰
+  List<String> _books = ['All'];
+  Map<String, String> _bookIdToTitle = {}; // b1 -> Pride and Prejudice
+
+  @override
+  void initState() {
+    super.initState();
+    _loadNotes();
+
+    _searchController.addListener(() {
+      _filterNotes();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // åŠ è½½ç¬”è®°æ•°æ®
+  void _loadNotes() async {
+    try {
+      // åŠ è½½å›¾ä¹¦ç”¨äºæ˜¾ç¤ºæ ‡é¢˜ä¸ç­›é€‰
+      final books = await ApiClient().searchBooks('');
+      _bookIdToTitle = {
+        for (final b in books)
+          (b['id'] ?? '').toString(): (b['title'] ?? '').toString()
+      };
+      _books = ['All', ...books.map((b) => (b['title'] ?? '').toString())];
+
+      // åŠ è½½ç¬”è®°
+      final noteItems = await ApiClient().listNotes();
+      final converted = noteItems.map((m) {
+        final id = (m['id'] ?? '').toString();
+        final bookId = (m['bookId'] ?? '').toString();
+        final content = (m['content'] ?? '').toString();
+        final createdAt = DateTime.tryParse((m['createdAt'] ?? '').toString()) ?? DateTime.now();
+        final title = _bookIdToTitle[bookId] ?? bookId;
+        return Note(
+          id: id,
+          bookId: bookId,
+          bookTitle: title,
+          chapterId: 0,
+          chapterTitle: '',
+          selectedText: '',
+          noteContent: content,
+          createdAt: createdAt,
+        );
+      }).toList();
+
+      setState(() {
+        _notes = converted;
+        _filteredNotes = converted;
+      });
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Failed to load notes: $e');
+    }
+  }
+
+  // ç­›é€‰ç¬”è®°
+  void _filterNotes() {
+    final searchText = _searchController.text.toLowerCase();
+    final filteredByBook = _selectedBook == 'All'
+        ? _notes
+        : _notes.where((note) => note.bookTitle == _selectedBook).toList();
+
+    setState(() {
+      _filteredNotes = filteredByBook.where((note) {
+        return note.noteContent.toLowerCase().contains(searchText) ||
+            note.selectedText.toLowerCase().contains(searchText) ||
+            note.chapterTitle.toLowerCase().contains(searchText);
+      }).toList();
+    });
+  }
+
+  // ç¼–è¾‘ç¬”è®°
+  void _editNote(Note note) {
+    final noteController = TextEditingController(text: note.noteContent);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Note'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${note.bookTitle} - ${note.chapterTitle}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Original: ${note.selectedText}',
+              style: TextStyle(
+                fontStyle: FontStyle.italic,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: noteController,
+              decoration: const InputDecoration(
+                labelText: 'Note Content',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 5,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final newContent = noteController.text.trim();
+              if (newContent.isEmpty) {
+                Navigator.pop(context);
+                return;
+              }
+              try {
+                await ApiClient().updateNote(id: note.id, content: newContent);
+                setState(() {
+                  final idx = _notes.indexWhere((n) => n.id == note.id);
+                  if (idx != -1) {
+                    _notes[idx] = Note(
+                      id: note.id,
+                      bookId: note.bookId,
+                      bookTitle: note.bookTitle,
+                      chapterId: note.chapterId,
+                      chapterTitle: note.chapterTitle,
+                      selectedText: note.selectedText,
+                      noteContent: newContent,
+                      createdAt: note.createdAt,
+                    );
+                    _filterNotes();
+                  }
+                });
+                Fluttertoast.showToast(msg: 'Note updated');
+              } catch (e) {
+                Fluttertoast.showToast(msg: 'Update failed: $e');
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // åˆ é™¤ç¬”è®°
+  void _deleteNote(Note note) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Note'),
+        content: const Text('Are you sure you want to delete this note? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              try {
+                final ok = await ApiClient().deleteNote(id: note.id);
+                if (ok) {
+                  setState(() {
+                    _notes.removeWhere((n) => n.id == note.id);
+                    _filterNotes();
+                  });
+                  Fluttertoast.showToast(msg: 'Note deleted');
+                } else {
+                  Fluttertoast.showToast(msg: 'Delete failed');
+                }
+              } catch (e) {
+                Fluttertoast.showToast(msg: 'Delete failed: $e');
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('My Notes')),
+      body: Column(
+        children: [
+          // æœç´¢å’Œç­›é€‰åŒºåŸŸ
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              children: [
+                // æœç´¢æ¡†
+                Expanded(
+                  flex: 3,
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search notes...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // ä¹¦ç±ç­›é€‰ä¸‹æ‹‰æ¡†
+                Expanded(
+                  flex: 2,
+                  child: DropdownButtonFormField<String>(
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16.0,
+                      ),
+                    ),
+                    initialValue: _selectedBook,
+                    items: _books.map((book) {
+                      return DropdownMenuItem<String>(
+                        value: book,
+                        child: Text(book),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          _selectedBook = value;
+                          _filterNotes();
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ç¬”è®°åˆ—è¡¨
+          Expanded(
+            child: _filteredNotes.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No notes found',
+                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _filteredNotes.length,
+                    itemBuilder: (context, index) {
+                      final note = _filteredNotes[index];
+                      return Dismissible(
+                        key: Key('note_${note.id}'),
+                        background: Container(
+                          color: Colors.blue,
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.only(left: 20),
+                          child: const Icon(Icons.edit, color: Colors.white),
+                        ),
+                        secondaryBackground: Container(
+                          color: Colors.red,
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 20),
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        confirmDismiss: (direction) async {
+                          if (direction == DismissDirection.endToStart) {
+                            // åˆ é™¤æ“ä½œ
+                            _deleteNote(note);
+                            return false; // ä¸è‡ªåŠ¨åˆ é™¤ï¼Œç­‰å¾…å¯¹è¯æ¡†ç¡®è®¤
+                          } else {
+                            // ç¼–è¾‘æ“ä½œ
+                            _editNote(note);
+                            return false; // ä¸è‡ªåŠ¨åˆ é™¤
+                          }
+                        },
+                        child: Card(
+                          margin: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 8.0,
+                          ),
+                          elevation: 2,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // ä¹¦ç±å’Œç« èŠ‚ä¿¡æ¯
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      '${note.bookTitle} - ${note.chapterTitle}',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${note.createdAt.year}/${note.createdAt.month}/${note.createdAt.day}',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                // åŸæ–‡
+                                Text(
+                                  'Original: ${note.selectedText}',
+                                  style: TextStyle(
+                                    fontStyle: FontStyle.italic,
+                                    color: Colors.grey[800],
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 8),
+                                // ç¬”è®°å†…å®¹
+                                Text(
+                                  note.noteContent,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(height: 8),
+                                // æ“ä½œæŒ‰é’®
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  children: [
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.edit, size: 18),
+                                      label: const Text('Edit'),
+                                      onPressed: () => _editNote(note),
+                                    ),
+                                    TextButton.icon(
+                                      icon: const Icon(Icons.delete, size: 18),
+                                      label: const Text('Delete'),
+                                      style: TextButton.styleFrom(
+                                        foregroundColor: Colors.red,
+                                      ),
+                                      onPressed: () => _deleteNote(note),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
