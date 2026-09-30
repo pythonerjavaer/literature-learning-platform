@@ -1,5 +1,12 @@
 # Literature Learning Platform
 
+## 在线交互演示
+
+[**打开知识理解与证据问答网页**](https://pythonerjavaer.github.io/interview-portfolio/projects/reading.html)
+
+示例阅读、预设回答、证据定位与笔记。无需安装，不调用真实大模型。
+
+
 A cross-platform reading and discussion application for exploring English classics. The Flutter client combines focused reading, personal notes, professional analysis and community discussion with an optional AI study assistant. A lightweight Dart Shelf service provides the API and local JSON persistence.
 
 ## Product features
